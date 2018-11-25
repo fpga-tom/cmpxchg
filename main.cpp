@@ -65,7 +65,7 @@ volatile uint64_t shared_var = 0;
 volatile uint64_t timestamp = 0;
 
 
-uint64_t fs = 10000000;
+uint64_t fs = 100000;
 double T = 1e6/fs;
 Signal sig;
 std::vector<uint64_t > buf(fs);
@@ -121,21 +121,164 @@ void thread_2(int tid) {
 
 uint64_t test = { 0xdecafbadfeedbeef };
 
-int main()
-{
-    auto t1 = std::thread(thread_1);
-    auto t2 = std::thread(thread_2, 0);
-//    auto t3 = std::thread(thread_2, 1);
-//    auto t4 = std::thread(thread_2, 2);
-//    auto t5 = std::thread(thread_2, 3);
-//    auto t6 = std::thread(thread_2, 4);
-//    auto t7 = std::thread(thread_2, 5);
-    t1.join();
-    t2.join();
-//    t3.join();
-//    t4.join();
-//    t5.join();
-//    t6.join();
-//    t7.join();
+const uint64_t reg_a_len = 19;
+const uint64_t reg_b_len = 22;
+const uint64_t reg_c_len = 23;
+
+const uint64_t reg_a_lsb = 0;
+const uint64_t reg_b_lsb = reg_a_lsb + reg_a_len;
+const uint64_t reg_c_lsb = reg_b_lsb + reg_b_len;
+
+const uint64_t reg_a_msb = reg_a_lsb + reg_a_len - 1;
+const uint64_t reg_b_msb = reg_b_lsb + reg_b_len - 1;
+const uint64_t reg_c_msb = reg_c_lsb + reg_c_len - 1;
+
+const uint64_t reg_a_mask = ((1UL << reg_a_len) - 1) << reg_a_lsb;
+const uint64_t reg_b_mask = ((1UL << reg_b_len) - 1) << reg_b_lsb;
+const uint64_t reg_c_mask = ((1UL << reg_c_len) - 1) << reg_c_lsb;
+
+const uint64_t clk_bit_a = 1UL << (8 + reg_a_lsb);
+const uint64_t clk_bit_b = 1UL << (10 + reg_b_lsb);
+const uint64_t clk_bit_c = 1UL << (10 + reg_c_lsb);
+
+const uint64_t data_bit_a[] = {1UL << (18 + reg_a_lsb),
+                               1UL << (17 + reg_a_lsb),
+                               1UL << (16 + reg_a_lsb),
+                               1UL << (13 + reg_a_lsb)};
+
+const uint64_t data_bit_b[] = {1UL << (21 + reg_b_lsb),
+                               1UL << (20 + reg_b_lsb)};
+
+const uint64_t data_bit_c[] = {1UL << (22 + reg_c_lsb),
+                               1UL << (21 + reg_c_lsb),
+                               1UL << (20 + reg_c_lsb),
+                               1UL << (7 + reg_c_lsb)};
+
+uint64_t reg_2(uint64_t i_state, int rounds = 64) {
+    uint64_t r_state = 0;
+
+    for (int i = 0; i < rounds; i++) {
+        bool m_bit = ((i_state & clk_bit_a) != 0 && (i_state & clk_bit_b) != 0) ||
+                     ((i_state & clk_bit_b) != 0 && (i_state & clk_bit_c) != 0) ||
+                     ((i_state & clk_bit_c) != 0 && (i_state & clk_bit_a) != 0);
+        bool clk_a = ((i_state & clk_bit_a) != 0) == m_bit;
+        bool clk_b = ((i_state & clk_bit_b) != 0) == m_bit;
+        bool clk_c = ((i_state & clk_bit_c) != 0) == m_bit;
+
+
+        bool msb_a = ((i_state >> reg_a_msb) & 1) != 0;
+        bool msb_b = ((i_state >> reg_b_msb) & 1) != 0;
+        bool msb_c = ((i_state >> reg_c_msb) & 1) != 0;
+
+        if (clk_a) {
+            uint64_t s_state = (i_state & reg_a_mask) << 1;
+
+            bool feedback = ((i_state & data_bit_a[0]) != 0) !=
+                            ((i_state & data_bit_a[1]) != 0) !=
+                            ((i_state & data_bit_a[2]) != 0) !=
+                            ((i_state & data_bit_a[3]) != 0);
+
+            uint64_t t_state = s_state | (uint64_t )feedback;
+            i_state = (i_state & ~reg_a_mask) | (t_state & reg_a_mask);
+        }
+        if (clk_b) {
+            uint64_t s_state = (i_state & reg_b_mask) << 1;
+            bool feedback = ((i_state & data_bit_b[0]) != 0) !=
+                            ((i_state & data_bit_b[1]) != 0);
+
+            uint64_t t_state = s_state  | ((uint64_t )feedback << reg_b_lsb);
+            i_state = (i_state & ~reg_b_mask) | (t_state & reg_b_mask);
+
+        }
+        if (clk_c) {
+            uint64_t s_state = (i_state & reg_c_mask) << 1;
+            bool feedback = ((i_state & data_bit_c[0]) != 0) !=
+                            ((i_state & data_bit_c[1]) != 0) !=
+                            ((i_state & data_bit_c[2]) != 0) !=
+                            ((i_state & data_bit_c[3]) != 0);
+
+            uint64_t t_state = s_state | ((uint64_t )feedback << reg_c_lsb);
+            i_state = (i_state & ~reg_c_mask) | (t_state & reg_c_mask);
+        }
+        r_state = (r_state << 1) | (uint64_t )(msb_a != msb_b != msb_c);
+    }
+
+    return r_state;
+}
+uint64_t reg_1(uint64_t i_state, int rounds = 64) {
+    uint64_t r_state = 0;
+    uint64_t r1 = i_state & reg_a_mask;
+    uint64_t r2 = (i_state & reg_b_mask) >> reg_b_lsb;
+    uint64_t r3 = (i_state & reg_c_mask) >> reg_c_lsb;
+
+    for(int i = 0; i < rounds; i++) {
+        bool a = ((r1 >> 8) & 1) != 0;
+        bool b = ((r2 >> 10) & 1) != 0;
+        bool c = ((r3 >> 10) & 1) != 0;
+        bool m_bit = (a && b) || (b && c) || (c && a);
+
+        uint64_t msb_a = ((r1 >> (reg_a_len - 1)) & 1);
+        uint64_t msb_b = ((r2 >> (reg_b_len - 1)) & 1);
+        uint64_t msb_c = ((r3 >> (reg_c_len - 1)) & 1);
+
+
+        if (a == m_bit) {
+            bool feedback = ((r1 & (1UL << 13)) != 0) !=
+                            ((r1 & (1UL << 16)) != 0) !=
+                            ((r1 & (1UL << 17)) != 0) !=
+                            ((r1 & (1UL << 18)) != 0);
+            r1 = (r1 << 1) | (uint64_t) feedback;
+
+        }
+        if (b == m_bit) {
+            bool feedback = ((r2 & (1UL << 20)) != 0) !=
+                            ((r2 & (1UL << 21)) != 0);
+            r2 = (r2 << 1) | (uint64_t) feedback;
+
+        }
+        if (c == m_bit) {
+            bool feedback = ((r3 & (1UL << 7)) != 0) !=
+                            ((r3 & (1UL << 20)) != 0) !=
+                            ((r3 & (1UL << 21)) != 0) !=
+                            ((r3 & (1UL << 22)) != 0);
+            r3 = (r3 << 1) | (uint64_t) feedback;
+        }
+
+        r_state = (r_state << 1) | (msb_a ^ msb_b ^ msb_c);
+    }
+    return r_state;
+
+}
+
+int main() {
+//    auto t1 = std::thread(thread_1);
+//    auto t2 = std::thread(thread_2, 0);
+//    t1.join();
+//    t2.join();
+    uint64_t op = 0;
+    uint64_t r = test;
+    uint64_t start = rdtsc();
+    const int repeat = 1000000;
+    for (int i = 0; i < repeat; i++) {
+        r = reg_1(r);
+    }
+    uint64_t end = rdtsc();
+    op = end - start;
+
+    std::cout << std::dec << op/repeat << std::endl;
+    std::cout << std::dec << op << std::endl;
+    std::cout << std::hex << r << std::endl;
+
+    r = test;
+    start = rdtsc();
+    for (int i = 0; i < repeat; i++) {
+        r = reg_2(r);
+    }
+    end = rdtsc();
+    op = end - start;
+
+    std::cout << std::dec << op/repeat << std::endl;
+    std::cout << std::dec << op << std::endl;
+    std::cout << std::hex << r << std::endl;
     return 0;
 }

@@ -294,42 +294,59 @@ int main() {
 //    auto t2 = std::thread(thread_2, 0);
 //    t1.join();
 //    t2.join();
-    uint64_t op = 0;
-    uint64_t r = test;
-    uint64_t start = rdtsc();
-    const int repeat = 11114096;
-    for (int i = 0; i < repeat; i++) {
-        r = reg_0(r);
+    for(int rr = 0; rr < 3; rr++) {
+        uint64_t op = 0;
+        uint64_t r = test;
+        struct timespec clock_start, clock_end;
+        clock_gettime(CLOCK_MONOTONIC_RAW, &clock_start);
+        uint64_t start = rdtsc();
+        const int repeat = 11114096;
+        uint64_t dp_count = 0;
+        uint64_t dp_len = 0;
+        uint64_t last_dp = 0;
+        for (int i = 0; i < repeat; i++) {
+            r = reg_0(r);
+            if((r & ((1<<12)-1)) == 0) {
+//                std::cout << "dp " << std::hex << r << std::endl;
+                ++dp_count;
+                dp_len += (i - last_dp);
+                last_dp = i;
+            }
+        }
+        uint64_t end = rdtsc();
+        clock_gettime(CLOCK_MONOTONIC_RAW, &clock_end);
+        uint64_t delta_us = (clock_end.tv_sec - clock_start.tv_sec) * 1000000 + (clock_end.tv_nsec - clock_start.tv_nsec) / 1000;
+        op = end - start;
+
+        std::cout << std::dec << " dp len: " << (dp_len / dp_count) << std::endl;
+        std::cout << std::dec << (repeat*1e6/delta_us) << std::endl;
+        std::cout << std::dec << op / repeat << std::endl;
+        std::cout << std::dec << op << std::endl;
+        std::cout << std::hex << r << std::endl;
+
+        r = test;
+        start = rdtsc();
+        for (int i = 0; i < repeat; i++) {
+            r = reg_1(r);
+        }
+        end = rdtsc();
+        op = end - start;
+
+        std::cout << std::dec << op / repeat << std::endl;
+        std::cout << std::dec << op << std::endl;
+        std::cout << std::hex << r << std::endl;
+
+        r = test;
+        start = rdtsc();
+        for (int i = 0; i < repeat; i++) {
+            r = reg_2(r);
+        }
+        end = rdtsc();
+        op = end - start;
+
+        std::cout << std::dec << op / repeat << std::endl;
+        std::cout << std::dec << op << std::endl;
+        std::cout << std::hex << r << std::endl;
     }
-    uint64_t end = rdtsc();
-    op = end - start;
-
-    std::cout << std::dec << op/repeat << std::endl;
-    std::cout << std::dec << op << std::endl;
-    std::cout << std::hex << r << std::endl;
-
-    r = test;
-    start = rdtsc();
-    for (int i = 0; i < repeat; i++) {
-        r = reg_1(r);
-    }
-    end = rdtsc();
-    op = end - start;
-
-    std::cout << std::dec << op/repeat << std::endl;
-    std::cout << std::dec << op << std::endl;
-    std::cout << std::hex << r << std::endl;
-
-    r = test;
-    start = rdtsc();
-    for (int i = 0; i < repeat; i++) {
-        r = reg_2(r);
-    }
-    end = rdtsc();
-    op = end - start;
-
-    std::cout << std::dec << op/repeat << std::endl;
-    std::cout << std::dec << op << std::endl;
-    std::cout << std::hex << r << std::endl;
     return 0;
 }

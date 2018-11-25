@@ -221,28 +221,26 @@ uint64_t reg_1(uint64_t i_state, int rounds = 64) {
         uint64_t msb_b = ((r2 >> (reg_b_len - 1)) & 1);
         uint64_t msb_c = ((r3 >> (reg_c_len - 1)) & 1);
 
+        uint64_t not_clock1 = ((uint64_t )(a == m_bit)) - 1;
+        uint64_t not_clock2 = ((uint64_t )(b == m_bit)) - 1;
+        uint64_t not_clock3 = ((uint64_t )(c == m_bit)) - 1;
 
-        if (a == m_bit) {
-            bool feedback = ((r1 & (1UL << 13)) != 0) !=
-                            ((r1 & (1UL << 16)) != 0) !=
-                            ((r1 & (1UL << 17)) != 0) !=
-                            ((r1 & (1UL << 18)) != 0);
-            r1 = (r1 << 1) | (uint64_t) feedback;
 
-        }
-        if (b == m_bit) {
-            bool feedback = ((r2 & (1UL << 20)) != 0) !=
-                            ((r2 & (1UL << 21)) != 0);
-            r2 = (r2 << 1) | (uint64_t) feedback;
+        bool feedback = ((r1 & (1UL << 13)) != 0) !=
+                        ((r1 & (1UL << 16)) != 0) !=
+                        ((r1 & (1UL << 17)) != 0) !=
+                        ((r1 & (1UL << 18)) != 0);
+        r1 = (((r1 << 1) | (uint64_t) feedback) & ~not_clock1) | (r1 & not_clock1);
 
-        }
-        if (c == m_bit) {
-            bool feedback = ((r3 & (1UL << 7)) != 0) !=
-                            ((r3 & (1UL << 20)) != 0) !=
-                            ((r3 & (1UL << 21)) != 0) !=
-                            ((r3 & (1UL << 22)) != 0);
-            r3 = (r3 << 1) | (uint64_t) feedback;
-        }
+        feedback = ((r2 & (1UL << 20)) != 0) !=
+                        ((r2 & (1UL << 21)) != 0);
+        r2 = (((r2 << 1) | (uint64_t) feedback) & ~not_clock2) | (r2 & not_clock2);
+
+        feedback = ((r3 & (1UL << 7)) != 0) !=
+                        ((r3 & (1UL << 20)) != 0) !=
+                        ((r3 & (1UL << 21)) != 0) !=
+                        ((r3 & (1UL << 22)) != 0);
+        r3 = (((r3 << 1) | (uint64_t) feedback) & ~not_clock3) | (r3 & not_clock3);
 
         r_state = (r_state << 1) | (msb_a ^ msb_b ^ msb_c);
     }
@@ -258,7 +256,7 @@ int main() {
     uint64_t op = 0;
     uint64_t r = test;
     uint64_t start = rdtsc();
-    const int repeat = 1000000;
+    const int repeat = 4096;
     for (int i = 0; i < repeat; i++) {
         r = reg_1(r);
     }

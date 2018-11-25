@@ -212,9 +212,9 @@ uint64_t reg_1(uint64_t i_state, int rounds = 64) {
     uint64_t r3 = (i_state & reg_c_mask) >> reg_c_lsb;
 
     for(int i = 0; i < rounds; i++) {
-        bool a = ((r1 >> 8) & 1) != 0;
-        bool b = ((r2 >> 10) & 1) != 0;
-        bool c = ((r3 >> 10) & 1) != 0;
+        bool a = (r1 & (1UL << 8)) != 0;
+        bool b = (r2 & (1UL << 10)) != 0;
+        bool c = (r3 & (1UL << 10)) != 0;
         bool m_bit = (a && b) || (b && c) || (c && a);
 
         uint64_t msb_a = ((r1 >> (reg_a_len - 1)) & 1);

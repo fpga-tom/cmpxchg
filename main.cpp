@@ -232,7 +232,6 @@ uint64_t reg_1(uint64_t i_state, int rounds = 64) {
 //                        ((r1 & (1UL << 17)) != 0) !=
 //                        ((r1 & (1UL << 18)) != 0);
         uint64_t feedback = (((((r1 ^ (r1 >> 3)) ^ ((r1 ^ (r1 >> 1)) >> 4))) >> 13) & 1);
-
         r1 = (((r1 << 1) | feedback) & ~not_clock1) | (r1 & not_clock1);
 
 //        feedback = ((r2 & (1UL << 20)) != 0) !=
@@ -253,6 +252,43 @@ uint64_t reg_1(uint64_t i_state, int rounds = 64) {
 
 }
 
+uint64_t reg_0(uint64_t i_state, int rounds = 64) {
+    uint64_t r_state = 0;
+    uint64_t r1 = i_state & reg_a_mask;
+    uint64_t r2 = (i_state & reg_b_mask) >> reg_b_lsb;
+    uint64_t r3 = (i_state & reg_c_mask) >> reg_c_lsb;
+
+    for(int i = 0; i < rounds; i++) {
+        bool a = (r1 & (1UL << 8)) != 0;
+        bool b = (r2 & (1UL << 10)) != 0;
+        bool c = (r3 & (1UL << 10)) != 0;
+        bool m_bit = (a && b) || (b && c) || (c && a);
+
+        uint64_t msb_a = ((r1 >> (reg_a_len - 1)) & 1);
+        uint64_t msb_b = ((r2 >> (reg_b_len - 1)) & 1);
+        uint64_t msb_c = ((r3 >> (reg_c_len - 1)) & 1);
+
+        if (a == m_bit) {
+            uint64_t feedback = (((((r1 ^ (r1 >> 3)) ^ ((r1 ^ (r1 >> 1)) >> 4))) >> 13) & 1);
+            r1 = ((r1 << 1) | feedback);
+        }
+
+        if(b == m_bit) {
+            uint64_t feedback = (((r2 ^ (r2 >> 1)) >> 20) & 1);
+            r2 = ((r2 << 1) | feedback);
+        }
+
+        if(c == m_bit) {
+            uint64_t feedback = (((((r3 ^ (r3 >> 13)) ^ ((r3 ^ (r3 >> 1)) >> 14))) >> 7) & 1);
+            r3 = ((r3 << 1) | feedback);
+        }
+
+        r_state = (r_state << 1) | (msb_a ^ msb_b ^ msb_c);
+    }
+    return r_state;
+
+}
+
 int main() {
 //    auto t1 = std::thread(thread_1);
 //    auto t2 = std::thread(thread_2, 0);
@@ -263,9 +299,21 @@ int main() {
     uint64_t start = rdtsc();
     const int repeat = 11114096;
     for (int i = 0; i < repeat; i++) {
-        r = reg_1(r);
+        r = reg_0(r);
     }
     uint64_t end = rdtsc();
+    op = end - start;
+
+    std::cout << std::dec << op/repeat << std::endl;
+    std::cout << std::dec << op << std::endl;
+    std::cout << std::hex << r << std::endl;
+
+    r = test;
+    start = rdtsc();
+    for (int i = 0; i < repeat; i++) {
+        r = reg_1(r);
+    }
+    end = rdtsc();
     op = end - start;
 
     std::cout << std::dec << op/repeat << std::endl;

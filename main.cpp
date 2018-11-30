@@ -297,7 +297,7 @@ uint64_t reg_0(uint64_t i_state, int rounds = 64) {
 
 }
 
-int main() {
+int main_rx() {
 #if 0
     auto t1 = std::thread(thread_1);
     auto t2 = std::thread(thread_2, 0);
@@ -317,7 +317,7 @@ int main() {
             .gain_mode("fast_attack")
             .with_lo(88.8)
             .with_bw(.2)
-            .with_fs(10.45)
+            .with_fs(10)
             .with_K(0x80000);;
     Sync s(0x80000);
     DummySink ds;

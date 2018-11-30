@@ -19,7 +19,7 @@ namespace module {
 
         namespace port {
             enum class generate : uint8_t {
-                p_out, SIZE
+                p_out_r, p_out_i, SIZE
             };
         }
     }
@@ -73,16 +73,20 @@ public:
                                  buffer_size(K*n_frames) {
         Task & t_generate = create_task("generate");
 
-        Port & p_generate = t_generate.create_port_out("p_out", K*n_frames*sizeof(uint16_t));
+        Port & p_generate_r = t_generate.create_port_out("p_out_r", K*n_frames*sizeof(uint16_t));
+        Port & p_generate_i = t_generate.create_port_out("p_out_i", K*n_frames*sizeof(uint16_t));
 
         t_generate.create_codelet([this]() -> int {
-            Port& p = this->operator[](module::rx::port::generate ::p_out);
+            Port& p_r = this->operator[](module::rx::port::generate ::p_out_r);
+            Port& p_i = this->operator[](module::rx::port::generate ::p_out_i);
             for(uint64_t i= 0; true ;i++) {
-                std::shared_ptr<std::vector<uint8_t >> v_out = this->operator[](module::rx::tsk::generate).buf[i%2];
+                std::shared_ptr<std::vector<uint8_t >> v_out_r = this->operator[](module::rx::tsk::generate).buf[i%2];
+                std::shared_ptr<std::vector<uint8_t >> v_out_i = this->operator[](module::rx::tsk::generate).buf[2+i%2];
 
-                _generate(v_out->data());
+                _generate(v_out_r->data(), v_out_i->data());
 
-                p.put(reinterpret_cast<uint64_t>(v_out->data()));
+                p_r.put(reinterpret_cast<uint64_t>(v_out_r->data()));
+                p_i.put(reinterpret_cast<uint64_t>(v_out_i->data()));
             }
 
             return 0;
@@ -94,7 +98,7 @@ public:
     void start_rx();
     inline Port& operator[](const module::rx::port::generate p) { return Module::operator[]((int)module::rx::tsk::generate)[(int)p]; }
 protected:
-    void _generate(uint8_t *U_K);
+    void _generate(uint8_t *real, uint8_t *imag);
 };
 
 

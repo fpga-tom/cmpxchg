@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <cmath>
 #include "Module.h"
 
 namespace module {
@@ -31,7 +32,8 @@ public:
     inline Port& operator[](const module::sync::port::align p) { return Module::operator[]((int)module::sync::tsk::align)[(int)p]; }
 
 
-    Sync(const int buf_size=10240) {
+    const int buf_size;
+    Sync(const int buf_size=10240) : buf_size(buf_size) {
         Task & t_correlate = create_task("correlate");
 
 
@@ -111,23 +113,23 @@ public:
 
 
     void correlate(uint8_t *d_in, uint8_t *d_out) {
-        for(int i = 0;i  < 10240; i++) {
-            d_out[i] += d_in[i] + i;
+        for(int i = 0;i  < buf_size; i++) {
+            d_out[i] += (d_in[i] + i);
         }
 
     }
     void find_peak(uint8_t *d_in, uint8_t *d_out) {
-        for(int i = 0;i  < 10240; i++) {
+        for(int i = 0;i  < buf_size; i++) {
             d_out[i] += d_in[i] + i;
         }
     }
     void lock(uint8_t *d_in, uint8_t *d_out) {
-        for(int i = 0;i  < 10240; i++) {
+        for(int i = 0;i  < buf_size; i++) {
             d_out[i] += d_in[i] + i;
         }
     }
     void align(uint8_t *d_in, uint8_t *d_out) {
-        for(int i = 0;i  < 10240; i++) {
+        for(int i = 0;i  < buf_size; i++) {
             d_out[i] += d_in[i] + i;
         }
     }

@@ -181,7 +181,7 @@ void Rx::channel_read(const struct iio_channel *chn,
     }
 }
 
-void Rx::_generate(uint8_t *U_K) {
+void Rx::_generate(uint8_t *real, uint8_t *imag) {
 
     std::unique_lock<std::mutex> lock(iio_mutex);
 
@@ -201,9 +201,9 @@ void Rx::_generate(uint8_t *U_K) {
     }
 
     uint32_t items = this->K;
-    channel_read(channel_list[0], U_K,
+    channel_read(channel_list[0], real,
                  items * sizeof(short));
-    channel_read(channel_list[1], U_K,
+    channel_read(channel_list[1], imag,
                  items * sizeof(short));
 
     items_in_buffer -= items;

@@ -5,6 +5,10 @@
 #include <fstream>
 #include <vector>
 #include "Signal.h"
+#include "Sync.h"
+#include "Rx.h"
+#include "RxBuilder.h"
+#include "DummySink.h"
 
 namespace types
 {
@@ -65,31 +69,32 @@ volatile uint64_t shared_var = 0;
 volatile uint64_t timestamp = 0;
 
 
-uint64_t fs = 100000;
+const uint64_t fs = 0x8000;
 double T = 1e6/fs;
 Signal sig;
-std::vector<uint64_t > buf(fs);
+//volatile std::vector<uint64_t > buf(fs);
+volatile uint64_t buf[fs];
 void thread_1() {
 //    uint64_t start = rdtsc();
     struct timespec start, end;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &start);
-    int64_t op = 0;
+    uint64_t delta_sum = 0;
 
-    for(uint64_t i = 0; i < fs; i++) {
-        buf[i] = i;
-//        uint64_t op_start = rdtsc();
-//        while(!cas(&shared_var, 0, i+1));
-//        uint64_t op_end = rdtsc();
-//        uint64_t d = op_end - op_start;
-//        op += d;
+    for (uint64_t k = 0; k < 1000000; k++) {
+
+        int64_t op = 0;
+
+        for (uint64_t i = 0; i < fs; i++) {
+            buf[i] = i*(k+1);
+        }
+        clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+        sig.put(buf);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &end);
+        uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
+        delta_sum += delta_us;
+        if(k % 10000 == 0)
+        std::cout << "done: " << delta_us / 1000 << " " << (1000000 * fs * k)/(delta_sum+1)/(1<<30) << std::endl;
+//        std::cout << op / fs << std::endl;
     }
-    sig.put();
-//    while(!cas(&shared_var, 0, 1));
-    clock_gettime(CLOCK_MONOTONIC_RAW, &end);
-    uint64_t delta_us = (end.tv_sec - start.tv_sec) * 1000000 + (end.tv_nsec - start.tv_nsec) / 1000;
-//    uint64_t end = rdtsc();
-    std::cout << "done: " << delta_us/1000 << std::endl;
-    std::cout << op/fs << std::endl;
 }
 
 void thread_2(int tid) {
@@ -98,9 +103,12 @@ void thread_2(int tid) {
 //    std::vector<uint64_t> *buf;
     struct timespec start, end;
     uint64_t last_timestamp = 0;
+    volatile uint64_t *buf;
     clock_gettime(CLOCK_MONOTONIC_RAW, &start);
 //    while(!tas(&shared_var, 0));
-    sig.get();
+    for(uint64_t k = 0; k < 1000000; k++) {
+        buf = sig.get();
+    }
 //    buf = (std::vector<uint64_t > *) local_var;
 //    for(int i = 0; i < fs-1; i++) {
 //        while (cas(&timestamp, last_timestamp, 0));
@@ -290,11 +298,51 @@ uint64_t reg_0(uint64_t i_state, int rounds = 64) {
 }
 
 int main() {
-//    auto t1 = std::thread(thread_1);
-//    auto t2 = std::thread(thread_2, 0);
-//    t1.join();
-//    t2.join();
-    for(int rr = 0; rr < 3; rr++) {
+#if 0
+    auto t1 = std::thread(thread_1);
+    auto t2 = std::thread(thread_2, 0);
+    t1.join();
+    t2.join();
+#endif
+
+    RXBuilder builder;
+    std::unique_ptr<Rx> rx = builder
+            .with_rfport("A_BALANCED")
+            .with_uri("192.168.4.10")
+            .enable_chn("voltage0")
+            .enable_chn("voltage1")
+            .enable_bbdc(true)
+            .enable_rfdc(true)
+            .enable_quadrature(true)
+            .gain_mode("fast_attack")
+            .with_lo(88.8)
+            .with_bw(.2)
+            .with_fs(10.45)
+            .with_K(0x80000);;
+    Sync s(0x80000);
+    DummySink ds;
+    s[module::sync::port::correlate::p_in].bind(rx->operator[](module::rx::port::generate::p_out));
+    ds[module::dummysink::port::sink::p_in].bind(s[module::sync::port::align::p_out]);
+    rx->start_rx();
+    rx->start();
+    s.start();
+    ds.start();
+    ds.join();
+    rx->join();
+    s.join();
+
+
+//    uint64_t i = 0;
+//    uint64_t rdd = rdtsc();
+//    for(; i < 0xffffffffffffffffUL; i++) {
+//        rdd += rdtsc();
+//        if(i % 0xffffffff == 0) {
+//            std::cout << std::hex << rdd << std::endl;
+//        }
+//    }
+
+#if 0
+    for(int rr = 0; rr < 1; rr++) {
         uint64_t op = 0;
         uint64_t r = test;
         struct timespec clock_start, clock_end;
@@ -304,10 +352,10 @@ int main() {
         uint64_t dp_count = 0;
         uint64_t dp_len = 0;
         uint64_t last_dp = 0;
-        for (int i = 0; i < repeat; i++) {
+        for (uint64_t i = 0; i < repeat; i++) {
             r = reg_0(r);
-            if((r & ((1<<12)-1)) == 0) {
-//                std::cout << "dp " << std::hex << r << std::endl;
+            if((r & ((1<<18)-1)) == 0) {
+                std::cout << "dp " << std::hex << r << std::endl;
                 ++dp_count;
                 dp_len += (i - last_dp);
                 last_dp = i;
@@ -348,5 +396,6 @@ int main() {
         std::cout << std::dec << op << std::endl;
         std::cout << std::hex << r << std::endl;
     }
+#endif
     return 0;
 }

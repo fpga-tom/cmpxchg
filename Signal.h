@@ -12,6 +12,7 @@
 
 class Signal {
     uint64_t shared_var = 0;
+    volatile uint64_t *buf;
 
 
     inline bool cas(volatile uint64_t *src,
@@ -29,8 +30,8 @@ class Signal {
 public:
 
     Signal() {};
-    void get() { while(!tas(&shared_var, 0)); }
-    void put() { while(!cas(&shared_var, 0, 1)); }
+    volatile uint64_t* get() { while(!tas(&shared_var, 0)); return buf;}
+    void put(volatile uint64_t *b) { buf = b; while(!cas(&shared_var, 0, 1)); }
 
 
 

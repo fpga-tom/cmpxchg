@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <iostream>
 #include <cmath>
+#include <complex>
 #include "Module.h"
 
 namespace module {
@@ -33,69 +34,71 @@ public:
 
 
     const int buf_size;
-    Sync(const int buf_size=10240) : buf_size(buf_size) {
-        Task & t_correlate = create_task("correlate");
+    std::complex<float> delay;
+    Sync(const int buf_size=10240) : buf_size(buf_size), delay(buf_size+8192) {
 
+        Task & t_correlate = create_task("correlate", {
+            TagPortIn("p_in", (uint8_t )module::sync::port::correlate::p_in),
+            TagPortOut("p_out", (uint8_t)module::sync::port::correlate::p_out, buf_size*sizeof(float))
+        },[this]() -> int {
+                Port& p = this->operator[](module::sync::port::correlate ::p_in);
+                Port& p_out = this->operator[](module::sync::port::correlate ::p_out);
+                for(uint64_t i= 0; true ;i++) {
+                    uint8_t *d_in = (uint8_t *)p.poll();
+                    std::shared_ptr<std::vector<uint8_t >> &v_out = this->operator[](module::sync::tsk::correlate).buf[i%2];
 
-        t_correlate.create_port_in("p_in");
-        Port & p_correlate = t_correlate.create_port_out("p_out", buf_size);
+                    correlate(d_in, v_out->data());
 
-        t_correlate.create_codelet([this]() -> int {
-            Port& p = this->operator[](module::sync::port::correlate ::p_in);
-            Port& p_out = this->operator[](module::sync::port::correlate ::p_out);
-            for(uint64_t i= 0; true ;i++) {
-                uint8_t *d_in = (uint8_t *)p.poll();
-                std::shared_ptr<std::vector<uint8_t >> &v_out = this->operator[](module::sync::tsk::correlate).buf[i%2];
-
-                correlate(d_in, v_out->data());
-
-                p_out.put(reinterpret_cast<uint64_t>(v_out->data()));
-            }
-
-            return 0;
+                    p_out.put(reinterpret_cast<uint64_t>(v_out->data()));
+                }
         });
 
 
-        Task & t_find_peak = create_task("find_peak");
-        t_find_peak.create_port_in("p_in").bind(p_correlate);
-        Port & p_find_peak = t_find_peak.create_port_out("p_out", buf_size);
-        t_find_peak.create_codelet([this]() -> int {
+        Task & t_find_peak = create_task("find_peak", {
+                TagPortIn("p_in", (uint8_t)module::sync::port::find_peak ::p_in),
+                TagPortOut("p_out", (uint8_t)module::sync::port::find_peak ::p_out, buf_size*sizeof(float))
+        }, [this]() -> int {
             Port& p = this->operator[](module::sync::port::find_peak ::p_in);
             Port& p_out = this->operator[](module::sync::port::find_peak ::p_out);
             for(uint64_t i= 0; true ;i++) {
-                uint8_t *d_in = (uint8_t *)p.poll();
                 std::shared_ptr<std::vector<uint8_t >> &v_out = this->operator[](module::sync::tsk::find_peak).buf[i%2];
 
-                find_peak(d_in, v_out->data());
-
-                p_out.put(reinterpret_cast<uint64_t>(v_out->data()));
-            }
-            return 0;
-        });
-
-
-        Task & t_lock = create_task("lock");
-        t_lock.create_port_in("p_in").bind(p_find_peak);
-        Port & p_lock = t_lock.create_port_out("p_out", buf_size);
-        t_lock.create_codelet([this]() -> int {
-            Port& p = this->operator[](module::sync::port::lock ::p_in);
-            Port& p_out = this->operator[](module::sync::port::lock ::p_out);
-            for(uint64_t i= 0; true ;i++) {
-                std::shared_ptr<std::vector<uint8_t >> &v_out = this->operator[](module::sync::tsk::lock).buf[i%2];
-
                 uint8_t *d_in = (uint8_t *)p.poll();
-                lock(d_in,v_out->data());
+                find_peak(d_in,v_out->data());
 
                 p_out.put(reinterpret_cast<uint64_t>(v_out->data()));
             }
 
             return 0;
         });
+        this->operator[](module::sync::port::find_peak ::p_in).bind(
+                this->operator[](module::sync::port::correlate ::p_out));
 
-        Task & t_align = create_task("align");
-        t_align.create_port_in("p_in").bind(p_lock);
-        t_align.create_port_out("p_out", buf_size);
-        t_align.create_codelet([this]() -> int {
+        Task & t_lock = create_task("lock", {
+            TagPortIn("p_in", (uint8_t)module::sync::port::lock ::p_in),
+            TagPortOut("p_out", (uint8_t)module::sync::port::lock ::p_out, buf_size*sizeof(float))
+        }, [this]() -> int {
+                Port& p = this->operator[](module::sync::port::lock ::p_in);
+                Port& p_out = this->operator[](module::sync::port::lock ::p_out);
+                for(uint64_t i= 0; true ;i++) {
+                    std::shared_ptr<std::vector<uint8_t >> &v_out = this->operator[](module::sync::tsk::lock).buf[i%2];
+
+                    uint8_t *d_in = (uint8_t *)p.poll();
+                    lock(d_in,v_out->data());
+
+                    p_out.put(reinterpret_cast<uint64_t>(v_out->data()));
+                }
+
+                return 0;
+        });
+        this->operator[](module::sync::port::lock ::p_in).bind(
+                this->operator[](module::sync::port::find_peak ::p_out));
+
+
+        Task & t_align = create_task("align", {
+                TagPortIn("p_in", (uint8_t)module::sync::port::align ::p_in),
+                TagPortOut("p_out", (uint8_t)module::sync::port::align ::p_out, buf_size*sizeof(float))
+        }, [this]() -> int {
             Port& p = this->operator[](module::sync::port::align ::p_in);
             Port& p_out = this->operator[](module::sync::port::align ::p_out);
             for(uint64_t i= 0; true ;i++) {
@@ -109,8 +112,9 @@ public:
 
             return 0;
         });
+        this->operator[](module::sync::port::align ::p_in).bind(
+                this->operator[](module::sync::port::lock ::p_out));
     }
-
 
     void correlate(uint8_t *d_in, uint8_t *d_out) {
         for(int i = 0;i  < buf_size; i++) {

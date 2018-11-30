@@ -25,23 +25,17 @@ class DummySink : public Module {
 
 public:
     inline Task&   operator[](const module::dummysink::tsk           t) { return Module::operator[]((int)t);                          }
-
     inline Port& operator[](const module::dummysink::port::sink p) { return Module::operator[]((int)module::dummysink::tsk::sink)[(int)p]; }
 
 
     DummySink() {
-        Task & t_sink = create_task("sink");
-
-        t_sink.create_port_in("p_in");
-
-        t_sink.create_codelet([this]() -> int {
-            Port& p = this->operator[](module::dummysink::port::sink ::p_in);
-            for(uint64_t i= 0; true ;i++) {
-                uint8_t *d_in = (uint8_t *)p.poll();
-//                std::cout << "got data" << std::endl;
-            }
-
-            return 0;
+        Task & t_sink = create_task("sink", {
+            TagPortIn("p_in", (uint8_t )module::dummysink::port::sink::p_in)
+        },[this]() -> int {
+                Port& p = this->operator[](module::dummysink::port::sink ::p_in);
+                for(uint64_t i= 0; true ;i++) {
+                    uint8_t *d_in = (uint8_t *)p.poll();
+                }
         });
     }
 

@@ -11,16 +11,16 @@
 #include <condition_variable>
 #include <thread>
 #include <iio.h>
+#include <complex>
 #include "Module.h"
 
 namespace module {
     namespace rx {
-        enum class tsk : uint8_t {generate, SIZE};
+        enum class tsk : uint8_t {generate, convert, SIZE};
 
         namespace port {
-            enum class generate : uint8_t {
-                p_out_r, p_out_i, SIZE
-            };
+            enum class generate : uint8_t {p_out_r, p_out_i, SIZE};
+            enum class convert : uint8_t {p_in_r, p_in_i, p_out, SIZE};
         }
     }
 }
@@ -28,6 +28,8 @@ namespace module {
 class Rx : public Module {
 
     inline Task&   operator[](const module::rx::tsk           t) { return Module::operator[]((int)t);                          }
+    inline Port& operator[](const module::rx::port::generate p) { return Module::operator[]((int)module::rx::tsk::generate)[(int)p]; }
+
 
 
     std::string uri;
@@ -65,18 +67,18 @@ class Rx : public Module {
     const int K;
 
 public:
+    inline Port& operator[](const module::rx::port::convert p) { return Module::operator[]((int)module::rx::tsk::convert)[(int)p]; }
     Rx(const int K,const std::string uri,
        const std::vector<std::string> &params,
        const std::vector<std::string> &channels,
        const int n_frames = 1) : K(K), uri(uri),
                                  params(params), channels(channels), items_in_buffer(0),
                                  buffer_size(K*n_frames) {
-        Task & t_generate = create_task("generate");
 
-        Port & p_generate_r = t_generate.create_port_out("p_out_r", K*n_frames*sizeof(uint16_t));
-        Port & p_generate_i = t_generate.create_port_out("p_out_i", K*n_frames*sizeof(uint16_t));
-
-        t_generate.create_codelet([this]() -> int {
+        Task & t_generate = create_task("generate", {
+            TagPortOut("p_out_r", (uint8_t )module::rx::port::generate ::p_out_r, K*n_frames*sizeof(uint16_t)),
+            TagPortOut("p_out_i", (uint8_t )module::rx::port::generate ::p_out_i, K*n_frames*sizeof(uint16_t)),
+        }, [this]() -> int {
             Port& p_r = this->operator[](module::rx::port::generate ::p_out_r);
             Port& p_i = this->operator[](module::rx::port::generate ::p_out_i);
             for(uint64_t i= 0; true ;i++) {
@@ -88,17 +90,48 @@ public:
                 p_r.put(reinterpret_cast<uint64_t>(v_out_r->data()));
                 p_i.put(reinterpret_cast<uint64_t>(v_out_i->data()));
             }
-
-            return 0;
         });
-    };
+
+        Task & t_convert = create_task("convert", {
+            TagPortIn("p_in_r", (uint8_t)module::rx::port::convert::p_in_r),
+            TagPortIn("p_in_i", (uint8_t)module::rx::port::convert::p_in_i),
+            TagPortOut("p_out", (uint8_t)module::rx::port::convert::p_out,
+                    K*n_frames*sizeof(std::complex<float>)),
+        },[this]() -> int {
+            Port& p_in_r = this->operator[](module::rx::port::convert::p_in_r);
+            Port& p_in_i = this->operator[](module::rx::port::convert::p_in_i);
+            Port& p_out = this->operator[](module::rx::port::convert ::p_out);
+            Task & t = this->operator[](module::rx::tsk::convert);
+            for(uint64_t i= 0; true ;i++) {
+                uint16_t *d_in_r = (uint16_t *)p_in_r.poll();
+                uint16_t *d_in_i = (uint16_t *)p_in_i.poll();
+
+                std::complex<float> * buf = reinterpret_cast<std::complex<float> *>(t.buf[i % 2]->data());
+                convert(d_in_r, d_in_i, buf);
+
+                p_out.put(reinterpret_cast<uint64_t>(buf));
+            }
+        });
+
+        this->operator[](module::rx::port::convert::p_in_r).bind(
+                this->operator[](module::rx::port::generate ::p_out_r));
+        this->operator[](module::rx::port::convert::p_in_i).bind(
+                this->operator[](module::rx::port::generate ::p_out_i));
+    }
+
+
 
     virtual ~Rx() = default;
 
     void start_rx();
-    inline Port& operator[](const module::rx::port::generate p) { return Module::operator[]((int)module::rx::tsk::generate)[(int)p]; }
 protected:
     void _generate(uint8_t *real, uint8_t *imag);
+
+    void convert(uint16_t *real, uint16_t *imag, std::complex<float> *d_out) {
+        for(int i = 0; i < K; i++) {
+            d_out[i] = std::complex<float>{(float)real[i], (float)imag[i]};
+        }
+    }
 };
 
 

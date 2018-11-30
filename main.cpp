@@ -9,7 +9,6 @@
 #include "Rx.h"
 #include "RxBuilder.h"
 #include "DummySink.h"
-#include "ShortToComplex.h"
 
 namespace types
 {
@@ -319,23 +318,19 @@ int main() {
             .with_lo(474)
             .with_bw(8)
             .with_fs(10)
-            .with_K(0x80000);
-    ShortToComplex shortToComplex(0x80000);
-    Sync s(0x80000);
+            .with_K(0x180000);
+    Sync s(0x180000);
 //    Sync s1(0x280000);
 //    Sync s2(0x280000);
 //    Sync s3(0x280000);
     DummySink ds;
-    shortToComplex[module::short_to_complex::port::convert ::p_in_r].bind(rx->operator[](module::rx::port::generate::p_out_r));
-    shortToComplex[module::short_to_complex::port::convert ::p_in_i].bind(rx->operator[](module::rx::port::generate::p_out_i));
-    s[module::sync::port::correlate::p_in].bind(shortToComplex[module::short_to_complex::port::convert ::p_out]);
+    s[module::sync::port::correlate::p_in].bind(rx->operator[](module::rx::port::convert ::p_out));
 //    s1[module::sync::port::correlate::p_in].bind(s[module::sync::port::align::p_out]);
 //    s2[module::sync::port::correlate::p_in].bind(s1[module::sync::port::align::p_out]);
 //    s3[module::sync::port::correlate::p_in].bind(s2[module::sync::port::align::p_out]);
     ds[module::dummysink::port::sink::p_in].bind(s[module::sync::port::align::p_out]);
     rx->start_rx();
     rx->start();
-    shortToComplex.start();
 //    s3.start();
 //    s2.start();
 //    s1.start();
@@ -344,7 +339,6 @@ int main() {
 //    s1.join();
 //    s2.join();
 //    s3.join();
-    shortToComplex.join();
     ds.join();
     rx->join();
     s.join();

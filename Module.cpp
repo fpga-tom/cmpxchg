@@ -5,8 +5,8 @@
 #include <thread>
 #include "Module.h"
 
-Task& Module::create_task(const std::string &name) {
-    auto t = std::make_shared<Task>(name);
+Task& Module::create_task(const std::string &name, std::initializer_list<TagPort> ports, std::function<int(void)> codelet) {
+    auto t = std::make_shared<Task>(name, ports, codelet);
     tasks.emplace_back(t);
     return *tasks.back();
 }

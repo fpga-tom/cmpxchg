@@ -191,7 +191,7 @@ void Rx::_generate(uint8_t *real, uint8_t *imag) {
     }
 
     while (please_refill_buffer) {
-        auto fast_enough = iio_cond2.wait_for(lock, std::chrono::milliseconds(200));
+        auto fast_enough = iio_cond2.wait_for(lock, std::chrono::milliseconds(500));
         if(fast_enough == std::cv_status::timeout) {
             std::cerr << "timout reading data" << std::endl;
             return;

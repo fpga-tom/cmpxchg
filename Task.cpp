@@ -38,13 +38,13 @@ void Task::exec() {
         uint8_t *d_out[ports_out.size()];
 
         int c = 0;
-        for (std::shared_ptr<Port> p : ports_in) {
+        for (std::shared_ptr<Port>& p : ports_in) {
             uint8_t *d = (uint8_t *) p->poll();
             d_in[c++] = d;
         }
 
         c = 0;
-        for (std::shared_ptr<Port> p : ports_out) {
+        for (std::shared_ptr<Port>& p : ports_out) {
             uint8_t *d = (uint8_t *) buf[3 * c + i % 3]->data();
             d_out[c++] = d;
         }
@@ -52,13 +52,13 @@ void Task::exec() {
         this->codelet(d_in, d_out);
 
         c = 0;
-        for (std::shared_ptr<Port> p : ports_out) {
+        for (std::shared_ptr<Port>& p : ports_out) {
             p->put(reinterpret_cast<uint64_t>(d_out[c++]));
         }
     }
 }
 
-Task::Task(const std::string &name, std::initializer_list<TagPort> ports, std::function<int(uint8_t*[], uint8_t*[])> codelet) : name(name), ports(ports.size()) {
+Task::Task(const std::string name, std::initializer_list<TagPort> ports, std::function<int(uint8_t*[], uint8_t*[])> codelet) : name(name), ports(ports.size()) {
     for(TagPort p : ports) {
         if(p.tag_type == TagPort::tag_type_t::port_in) {
             create_port_in(p.name, p.id);

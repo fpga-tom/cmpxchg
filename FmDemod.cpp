@@ -2,6 +2,7 @@
 // Created by tomas on 12/1/18.
 //
 
+#include <iostream>
 #include "FmDemod.h"
 
 int FmDemod::downsample_first(uint8_t **d_in, uint8_t **d_out) {

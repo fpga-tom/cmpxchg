@@ -38,7 +38,7 @@ public:
         port.shared_var = shared_var;
     }
 
-    uint64_t poll() { uint64_t v; while(!(v=tas(shared_var.get(), 0))) std::this_thread::sleep_for(std::chrono::nanoseconds(10)); return v;}
+    uint64_t poll() { uint64_t v; while(!(v=tas(shared_var.get(), 0))) std::this_thread::sleep_for(std::chrono::microseconds(100)); return v;}
     void put(uint64_t v) { while(!cas(shared_var.get(), 0, v)); }
 };
 

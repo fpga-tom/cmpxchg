@@ -34,7 +34,7 @@ struct TagPortOut : public TagPort {
 };
 class Task {
     friend Module;
-    const std::string &name;
+    const std::string name;
     std::vector<std::shared_ptr<Port>> ports;
     std::vector<std::shared_ptr<Port>> ports_in;
     std::vector<std::shared_ptr<Port>> ports_out;
@@ -49,7 +49,7 @@ protected:
     Port& create_port_out(const std::string &name,  uint8_t id, size_t n_elems, uint64_t n_buf = 3);
     void create_codelet(std::function<int(uint8_t*[], uint8_t*[])> codelet);
 public:
-    Task(const std::string &name, std::initializer_list<TagPort> ports, std::function<int(uint8_t*[], uint8_t*[])> codelet);
+    Task(const std::string name, std::initializer_list<TagPort> ports, std::function<int(uint8_t*[], uint8_t*[])> codelet);
     inline Port& operator[](const int id)
     {
         return *this->ports[id];

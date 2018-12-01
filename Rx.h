@@ -104,8 +104,8 @@ protected:
     void _generate(uint8_t *real, uint8_t *imag);
 
     void convert(uint8_t *d_in_r, uint8_t *d_in_i, uint8_t *_d_out) {
-        uint16_t *real = (uint16_t *)d_in_r;
-        uint16_t *imag = (uint16_t *)d_in_i;
+        int16_t *real = (int16_t *)d_in_r;
+        int16_t *imag = (int16_t *)d_in_i;
         std::complex<float> *d_out = (std::complex<float>*)_d_out;
         for(int i = 0; i < K; i++) {
             d_out[i] = std::complex<float>{(float)real[i], (float)imag[i]};

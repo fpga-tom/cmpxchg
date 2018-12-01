@@ -10,6 +10,7 @@
 #include "RxBuilder.h"
 #include "DummySink.h"
 #include "FmDemod.h"
+#include "PaAudio.h"
 
 namespace types
 {
@@ -319,13 +320,15 @@ int main() {
             .with_lo(88.8)
             .with_bw(.2)
             .with_fs(3.072)
-            .with_K(0x8000);
-    FmDemod fm(0x8000,16,4);
+            .with_K(0x10000);
+    FmDemod fm(0x10000,16,4);
+    PaAudio pa(0x10000/64);
 //    Sync s(0x8000);
-    DummySink ds;
+//    DummySink ds;
 //    s[module::sync::port::correlate::p_in].bind(rx->operator[](module::rx::port::convert ::p_out));
     fm[module::fm_demod::port::downsample_first ::p_in].bind(rx->operator[](module::rx::port::convert ::p_out));
-    ds[module::dummysink::port::sink::p_in].bind(fm[module::fm_demod::port::downsample_second ::p_out]);
+    pa[module::pa_audio::port::play::p_in].bind(fm[module::fm_demod::port::downsample_second::p_out]);
+//    ds[module::dummysink::port::sink::p_in].bind(fm[module::fm_demod::port::downsample_second ::p_out]);
 
     rx->start_rx();
     rx->start();
@@ -334,11 +337,13 @@ int main() {
 //    s1.start();
 //    s.start();
     fm.start();
-    ds.start();
+    pa.start();
+//    ds.start();
 //    s1.join();
 //    s2.join();
 //    s3.join();
-    ds.join();
+//    ds.join();
+    pa.join();
     rx->join();
     fm.join();
 //    s.join();

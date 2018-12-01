@@ -42,25 +42,26 @@ public:
     FmDemod(const int buf_size, int down_one, int down_two) :
         buf_size(buf_size), down_one(down_one), down_two(down_two) {
 
-        q_one = firdecim_crcf_create_kaiser(down_one,18,60.);
-        q_two = firdecim_rrrf_create_kaiser(down_two,18,60.);
+        q_one = firdecim_crcf_create_kaiser(down_one,16,30.);
+        q_two = firdecim_rrrf_create_kaiser(down_two,128,60.);
+//        firdecim_crcf_set_scale(q_one, 1.f/down_one);
 
         q_demod = freqdem_create(.75);
 
 
-        Task & t_downsample_first = create_task("downsample_first", {
+        Task & t_downsample_first = create_task("first", {
                 TagPortIn("p_in", (uint8_t )module::fm_demod::port::downsample_first::p_in),
-                TagPortOut("p_out", (uint8_t)module::fm_demod::port::downsample_first::p_out, buf_size*sizeof(std::complex<float>))
+                TagPortOut("p_out", (uint8_t)module::fm_demod::port::downsample_first::p_out, buf_size/down_one*sizeof(std::complex<float>))
         },[this](uint8_t** d_in, uint8_t **d_out) -> int {return this->downsample_first(d_in, d_out);});
 
         Task & t_demod = create_task("demod", {
                 TagPortIn("p_in", (uint8_t )module::fm_demod::port::demod::p_in),
-                TagPortOut("p_out", (uint8_t)module::fm_demod::port::demod::p_out, buf_size*sizeof(float))
+                TagPortOut("p_out", (uint8_t)module::fm_demod::port::demod::p_out, buf_size/down_one*sizeof(float))
         },[this](uint8_t** d_in, uint8_t **d_out) -> int {return this->demod(d_in, d_out);});
 
-        Task & t_downsample_second = create_task("downsample_second", {
+        Task & t_downsample_second = create_task("second", {
                 TagPortIn("p_in", (uint8_t )module::fm_demod::port::downsample_second::p_in),
-                TagPortOut("p_out", (uint8_t)module::fm_demod::port::downsample_second::p_out, buf_size*sizeof(float))
+                TagPortOut("p_out", (uint8_t)module::fm_demod::port::downsample_second::p_out, (buf_size/down_one/down_two)*sizeof(float))
         },[this](uint8_t** d_in, uint8_t **d_out) -> int {return this->downsample_second(d_in, d_out);});
 
         this->operator[](module::fm_demod::port::demod ::p_in).bind(

@@ -42,9 +42,8 @@ public:
     FmDemod(const int buf_size, int down_one, int down_two) :
         buf_size(buf_size), down_one(down_one), down_two(down_two) {
 
-        q_one = firdecim_crcf_create_kaiser(down_one,16,30.);
-        q_two = firdecim_rrrf_create_kaiser(down_two,128,60.);
-//        firdecim_crcf_set_scale(q_one, 1.f/down_one);
+        q_one = firdecim_crcf_create_kaiser(down_one,8,30.);
+        q_two = firdecim_rrrf_create_kaiser(down_two,8,60.);
 
         q_demod = freqdem_create(.75);
 

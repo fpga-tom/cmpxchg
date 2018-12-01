@@ -122,6 +122,7 @@ Rx::refill_thread()
 {
     std::unique_lock<std::mutex> lock(iio_mutex);
     ssize_t ret;
+    pthread_setname_np(pthread_self(), "refill");
 
     for (;;) {
         while (!please_refill_buffer) {
@@ -172,12 +173,12 @@ void Rx::channel_read(const struct iio_channel *chn,
     for (src_ptr = (uintptr_t) iio_buffer_first(buf, chn) + byte_offset;
          src_ptr < buf_end && dst_ptr + length <= end;
          src_ptr += buf_step, dst_ptr += length) {
-//        const int16_t i = ((int16_t*)src_ptr)[0]; // Real (I)
-//        const int16_t q = ((int16_t*)src_ptr)[1]; // Imag (Q)
-//        ((int16_t*)dst_ptr)[0] = q;
-//        ((int16_t*)dst_ptr)[1] = i;
-        iio_channel_convert(chn,
-                            (void *) dst_ptr, (const void *) src_ptr);
+        const int16_t i = ((int16_t*)src_ptr)[0]; // Real (I)
+        const int16_t q = ((int16_t*)src_ptr)[1]; // Imag (Q)
+        ((int16_t*)dst_ptr)[0] = q;
+        ((int16_t*)dst_ptr)[1] = i;
+//        iio_channel_convert(chn,
+//                            (void *) dst_ptr, (const void *) src_ptr);
     }
 }
 

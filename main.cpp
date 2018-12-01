@@ -330,6 +330,7 @@ int main() {
     pa[module::pa_audio::port::play::p_in].bind(fm[module::fm_demod::port::downsample_second::p_out]);
 //    ds[module::dummysink::port::sink::p_in].bind(fm[module::fm_demod::port::downsample_second ::p_out]);
 
+    pthread_setname_np(pthread_self(), "main");
     rx->start_rx();
     rx->start();
 //    s3.start();

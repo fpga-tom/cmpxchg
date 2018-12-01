@@ -11,6 +11,10 @@
 #include "DummySink.h"
 #include "FmDemod.h"
 #include "PaAudio.h"
+#include "Sniff.h"
+#include "FFT.h"
+#include "SDLSink.h"
+#include "Spectrogram.h"
 
 namespace types
 {
@@ -321,33 +325,38 @@ int main() {
             .with_bw(.2)
             .with_fs(3.072)
             .with_K(0x10000);
+
     FmDemod fm(0x10000,16,4);
     PaAudio pa(0x10000/64);
-//    Sync s(0x8000);
-//    DummySink ds;
-//    s[module::sync::port::correlate::p_in].bind(rx->operator[](module::rx::port::convert ::p_out));
     fm[module::fm_demod::port::downsample_first ::p_in].bind(rx->operator[](module::rx::port::convert ::p_out));
     pa[module::pa_audio::port::play::p_in].bind(fm[module::fm_demod::port::downsample_second::p_out]);
-//    ds[module::dummysink::port::sink::p_in].bind(fm[module::fm_demod::port::downsample_second ::p_out]);
+
+    Sniff sniff(rx->operator[](module::rx::port::convert ::p_out), 1024*sizeof(std::complex<float>));
+    FFT fft(1024);
+    Spectrogram spectrogram(1024);
+    SDLSink sdl(1024);
+    fft[module::fft::port::forward::p_in].bind(sniff[module::sniff::port::sniff::p_out]);
+    spectrogram[module::spectrogram::port::spectrum ::p_in].bind(fft[module::fft::port::forward::p_out]);
+    sdl[module::sdl::port::paint::p_in].bind(spectrogram[module::spectrogram::port::spectrum ::p_out]);
 
     pthread_setname_np(pthread_self(), "main");
+
     rx->start_rx();
     rx->start();
-//    s3.start();
-//    s2.start();
-//    s1.start();
-//    s.start();
     fm.start();
     pa.start();
-//    ds.start();
-//    s1.join();
-//    s2.join();
-//    s3.join();
-//    ds.join();
+    sniff.start();
+    fft.start();
+    spectrogram.start();
+    sdl.start();
+
     pa.join();
     rx->join();
     fm.join();
-//    s.join();
+    sniff.join();
+    fft.join();
+    spectrogram.join();
+    sdl.join();
 
 
 //    uint64_t i = 0;

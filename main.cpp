@@ -9,6 +9,7 @@
 #include "Rx.h"
 #include "RxBuilder.h"
 #include "DummySink.h"
+#include "FmDemod.h"
 
 namespace types
 {
@@ -315,33 +316,32 @@ int main() {
             .enable_rfdc(true)
             .enable_quadrature(true)
             .gain_mode("fast_attack")
-            .with_lo(474)
-            .with_bw(8)
-            .with_fs(10)
-            .with_K(0x80000);
-    Sync s(0x80000);
-//    Sync s1(0x280000);
-//    Sync s2(0x280000);
-//    Sync s3(0x280000);
+            .with_lo(88.8)
+            .with_bw(.2)
+            .with_fs(3.072)
+            .with_K(0x8000);
+    FmDemod fm(0x8000,16,4);
+//    Sync s(0x8000);
     DummySink ds;
-    s[module::sync::port::correlate::p_in].bind(rx->operator[](module::rx::port::convert ::p_out));
-//    s1[module::sync::port::correlate::p_in].bind(s[module::sync::port::align::p_out]);
-//    s2[module::sync::port::correlate::p_in].bind(s1[module::sync::port::align::p_out]);
-//    s3[module::sync::port::correlate::p_in].bind(s2[module::sync::port::align::p_out]);
-    ds[module::dummysink::port::sink::p_in].bind(s[module::sync::port::align::p_out]);
+//    s[module::sync::port::correlate::p_in].bind(rx->operator[](module::rx::port::convert ::p_out));
+    fm[module::fm_demod::port::downsample_first ::p_in].bind(rx->operator[](module::rx::port::convert ::p_out));
+    ds[module::dummysink::port::sink::p_in].bind(fm[module::fm_demod::port::downsample_second ::p_out]);
+
     rx->start_rx();
     rx->start();
 //    s3.start();
 //    s2.start();
 //    s1.start();
-    s.start();
+//    s.start();
+    fm.start();
     ds.start();
 //    s1.join();
 //    s2.join();
 //    s3.join();
     ds.join();
     rx->join();
-    s.join();
+    fm.join();
+//    s.join();
 
 
 //    uint64_t i = 0;

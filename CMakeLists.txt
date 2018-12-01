@@ -33,5 +33,5 @@ endif()
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS})
 
-add_executable(cmpxchg main.cpp Signal.cpp Signal.h Task.cpp Task.h Module.cpp Module.h Sync.cpp Sync.h Slot.cpp Slot.h Port.cpp Port.h Rx.cpp Rx.h RxBuilder.cpp RxBuilder.h DummySink.cpp DummySink.h Waterfall.cpp Waterfall.h bindings.cpp)
-target_link_libraries(cmpxchg pthread iio ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
+add_executable(cmpxchg main.cpp Signal.cpp Signal.h Task.cpp Task.h Module.cpp Module.h Sync.cpp Sync.h Slot.cpp Slot.h Port.cpp Port.h Rx.cpp Rx.h RxBuilder.cpp RxBuilder.h DummySink.cpp DummySink.h Waterfall.cpp Waterfall.h bindings.cpp FmDemod.cpp FmDemod.h)
+target_link_libraries(cmpxchg pthread iio liquid ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})

@@ -13,7 +13,7 @@
 
 class Module {
 protected:
-    Task& create_task(const std::string &name, std::initializer_list<TagPort> ports, std::function<int(void)> codelet);
+    Task& create_task(const std::string &name, std::initializer_list<TagPort> ports, std::function<int(uint8_t*[], uint8_t*[])> codelet);
 public:
     std::vector<std::shared_ptr<Task>> tasks;
     std::vector<std::thread> threads;

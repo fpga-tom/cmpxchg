@@ -31,12 +31,7 @@ public:
     DummySink() {
         Task & t_sink = create_task("sink", {
             TagPortIn("p_in", (uint8_t )module::dummysink::port::sink::p_in)
-        },[this]() -> int {
-                Port& p = this->operator[](module::dummysink::port::sink ::p_in);
-                for(uint64_t i= 0; true ;i++) {
-                    uint8_t *d_in = (uint8_t *)p.poll();
-                }
-        });
+        },[this](uint8_t** d_in, uint8_t **d_out) -> int { return 0; });
     }
 
 };

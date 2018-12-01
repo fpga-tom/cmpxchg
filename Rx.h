@@ -78,40 +78,16 @@ public:
         Task & t_generate = create_task("generate", {
             TagPortOut("p_out_r", (uint8_t )module::rx::port::generate ::p_out_r, K*n_frames*sizeof(uint16_t)),
             TagPortOut("p_out_i", (uint8_t )module::rx::port::generate ::p_out_i, K*n_frames*sizeof(uint16_t)),
-        }, [this]() -> int {
-            Port& p_r = this->operator[](module::rx::port::generate ::p_out_r);
-            Port& p_i = this->operator[](module::rx::port::generate ::p_out_i);
-            for(uint64_t i= 0; true ;i++) {
-                std::shared_ptr<std::vector<uint8_t >> v_out_r = this->operator[](module::rx::tsk::generate).buf[i%2];
-                std::shared_ptr<std::vector<uint8_t >> v_out_i = this->operator[](module::rx::tsk::generate).buf[2+i%2];
+        }, [this](uint8_t** d_in, uint8_t **d_out) -> int { this->_generate(d_out[0], d_out[1]); return 0; });
 
-                _generate(v_out_r->data(), v_out_i->data());
-
-                p_r.put(reinterpret_cast<uint64_t>(v_out_r->data()));
-                p_i.put(reinterpret_cast<uint64_t>(v_out_i->data()));
-            }
-        });
 
         Task & t_convert = create_task("convert", {
             TagPortIn("p_in_r", (uint8_t)module::rx::port::convert::p_in_r),
             TagPortIn("p_in_i", (uint8_t)module::rx::port::convert::p_in_i),
             TagPortOut("p_out", (uint8_t)module::rx::port::convert::p_out,
                     K*n_frames*sizeof(std::complex<float>)),
-        },[this]() -> int {
-            Port& p_in_r = this->operator[](module::rx::port::convert::p_in_r);
-            Port& p_in_i = this->operator[](module::rx::port::convert::p_in_i);
-            Port& p_out = this->operator[](module::rx::port::convert ::p_out);
-            Task & t = this->operator[](module::rx::tsk::convert);
-            for(uint64_t i= 0; true ;i++) {
-                uint16_t *d_in_r = (uint16_t *)p_in_r.poll();
-                uint16_t *d_in_i = (uint16_t *)p_in_i.poll();
+        },[this](uint8_t **d_in, uint8_t **d_out) -> int { this->convert(d_in[0], d_in[1], d_out[0]); return 0; });
 
-                std::complex<float> * buf = reinterpret_cast<std::complex<float> *>(t.buf[i % 2]->data());
-                convert(d_in_r, d_in_i, buf);
-
-                p_out.put(reinterpret_cast<uint64_t>(buf));
-            }
-        });
 
         this->operator[](module::rx::port::convert::p_in_r).bind(
                 this->operator[](module::rx::port::generate ::p_out_r));
@@ -127,7 +103,10 @@ public:
 protected:
     void _generate(uint8_t *real, uint8_t *imag);
 
-    void convert(uint16_t *real, uint16_t *imag, std::complex<float> *d_out) {
+    void convert(uint8_t *d_in_r, uint8_t *d_in_i, uint8_t *_d_out) {
+        uint16_t *real = (uint16_t *)d_in_r;
+        uint16_t *imag = (uint16_t *)d_in_i;
+        std::complex<float> *d_out = (std::complex<float>*)_d_out;
         for(int i = 0; i < K; i++) {
             d_out[i] = std::complex<float>{(float)real[i], (float)imag[i]};
         }

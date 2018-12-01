@@ -36,17 +36,20 @@ class Task {
     friend Module;
     const std::string &name;
     std::vector<std::shared_ptr<Port>> ports;
+    std::vector<std::shared_ptr<Port>> ports_in;
+    std::vector<std::shared_ptr<Port>> ports_out;
 
-    std::function<int(void)> codelet;
+    std::function<int(uint8_t*[], uint8_t*[])> codelet;
 
+    void exec();
 
 protected:
     Port& create_port(const std::string &name,  uint8_t id);
     Port& create_port_in(const std::string &name,  uint8_t id);
-    Port& create_port_out(const std::string &name,  uint8_t id, size_t n_elems, uint64_t n_buf = 2);
-    void create_codelet(std::function<int(void)> codelet);
+    Port& create_port_out(const std::string &name,  uint8_t id, size_t n_elems, uint64_t n_buf = 3);
+    void create_codelet(std::function<int(uint8_t*[], uint8_t*[])> codelet);
 public:
-    Task(const std::string &name, std::initializer_list<TagPort> ports, std::function<int(void)> codelet);
+    Task(const std::string &name, std::initializer_list<TagPort> ports, std::function<int(uint8_t*[], uint8_t*[])> codelet);
     inline Port& operator[](const int id)
     {
         return *this->ports[id];

@@ -318,8 +318,8 @@ int main() {
             .with_lo(474)
             .with_bw(8)
             .with_fs(10)
-            .with_K(0x180000);
-    Sync s(0x180000);
+            .with_K(0x80000);
+    Sync s(0x80000);
 //    Sync s1(0x280000);
 //    Sync s2(0x280000);
 //    Sync s3(0x280000);

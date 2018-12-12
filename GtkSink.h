@@ -7,6 +7,7 @@
 
 
 #include <cstdint>
+#include <deque>
 #include "Module.h"
 #include "Timer.h"
 
@@ -26,7 +27,7 @@ class GtkProto {
 public:
     virtual void x_range(uint64_t from, uint64_t to) = 0;
     virtual void y_range(uint64_t from, uint64_t to) = 0;
-    virtual void send(std::vector<std::pair<int, float>> data) = 0;
+    virtual void send(std::vector<float> data) = 0;
 };
 
 
@@ -36,6 +37,8 @@ class GtkSink : public Module {
     const int buf_size;
     const int FRAMES_PER_SECOND = 10;
     GtkProto &proto;
+    std::deque<std::vector< float>> vec_history;
+    std::vector< float> acc;
 
     Timer fps;
 public:

@@ -4,19 +4,8 @@
 #include <thread>
 #include <fstream>
 #include <vector>
+#include "FMrx.h"
 #include "Signal.h"
-#include "Sync.h"
-#include "Rx.h"
-#include "RxBuilder.h"
-#include "DummySink.h"
-#include "FmDemod.h"
-#include "PaAudio.h"
-#include "Sniff.h"
-#include "FFT.h"
-#include "SDLSink.h"
-#include "Spectrogram.h"
-#include "GnuplotSink.h"
-#include "gui/MainWin.h"
 
 namespace types
 {
@@ -314,58 +303,9 @@ int main(int argc, char** argv) {
 #endif
 #define FM_DEMOD
 #ifdef FM_DEMOD
-    RXBuilder builder;
-    std::unique_ptr<Rx> rx = builder
-            .with_rfport("A_BALANCED")
-            .with_uri("192.168.4.10")
-            .enable_chn("voltage0")
-            .enable_chn("voltage1")
-            .enable_bbdc(true)
-            .enable_rfdc(true)
-            .enable_quadrature(true)
-            .gain_mode("fast_attack")
-            .with_lo(88.8)
-            .with_bw(.2)
-            .with_fs(3.072*1)
-            .with_K(0x10000);
+    FMrx fmRx(88800000);
+    fmRx.play(argc, argv);
 
-    FmDemod fm(0x10000,16*1,4);
-    PaAudio pa(0x10000/64/1);
-    fm.p_in().bind(rx->p_out());
-    pa.p_in().bind(fm.p_out());
-
-    const int fft_len = 1024;
-    Sniff sniff(rx->p_out(), fft_len*sizeof(std::complex<float>));
-    FFT fft(fft_len);
-    Spectrogram spectrogram(fft_len);
-//    SDLSink sdl(1024);
-    MainWin mainWin(argc, argv);
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    GtkSink gp(fft_len, mainWin);
-    fft.p_in().bind(sniff.p_out());
-    spectrogram.p_in().bind(fft.p_out());
-    gp.p_in().bind(spectrogram.p_out());
-
-
-
-    pthread_setname_np(pthread_self(), "main");
-
-    rx->start_rx();
-    rx->start();
-    fm.start();
-    pa.start();
-    sniff.start();
-    fft.start();
-    spectrogram.start();
-    gp.start();
-
-    pa.join();
-    rx->join();
-    fm.join();
-    sniff.join();
-    fft.join();
-    spectrogram.join();
-    gp.join();
 
 #elif defined(DVB_DEMOD)
 

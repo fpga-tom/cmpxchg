@@ -125,6 +125,14 @@ Rx::refill_thread()
     pthread_setname_np(pthread_self(), "refill");
 
     for (;;) {
+        if(lo_mhz > 0) {
+            std::vector<std::string> params;
+            params.push_back("out_altvoltage0_RX_LO_frequency=" +
+                             std::to_string(lo_mhz));
+            set_params(phy, params);
+            std::cout << "new freq: " << lo_mhz << std::endl;
+            lo_mhz = -1;
+        }
         while (!please_refill_buffer) {
             auto fast_enough = iio_cond.wait_for(lock, std::chrono::milliseconds(100));
             if (fast_enough == std::cv_status::timeout) {
@@ -173,12 +181,12 @@ void Rx::channel_read(const struct iio_channel *chn,
     for (src_ptr = (uintptr_t) iio_buffer_first(buf, chn) + byte_offset;
          src_ptr < buf_end && dst_ptr + length <= end;
          src_ptr += buf_step, dst_ptr += length) {
-        const int16_t i = ((int16_t*)src_ptr)[0]; // Real (I)
-        const int16_t q = ((int16_t*)src_ptr)[1]; // Imag (Q)
-        ((int16_t*)dst_ptr)[0] = q;
-        ((int16_t*)dst_ptr)[1] = i;
-//        iio_channel_convert(chn,
-//                            (void *) dst_ptr, (const void *) src_ptr);
+//        const int16_t i = ((int16_t*)src_ptr)[0]; // Real (I)
+//        const int16_t q = ((int16_t*)src_ptr)[1]; // Imag (Q)
+//        ((int16_t*)dst_ptr)[0] = q;
+//        ((int16_t*)dst_ptr)[1] = i;
+        iio_channel_convert(chn,
+                            (void *) dst_ptr, (const void *) src_ptr);
     }
 }
 
@@ -212,3 +220,9 @@ void Rx::_generate(uint8_t *real, uint8_t *imag) {
 
 
 }
+
+void Rx::tune(uint32_t lo_mhz) {
+    this->lo_mhz = lo_mhz;
+}
+
+

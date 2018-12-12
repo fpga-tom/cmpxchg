@@ -73,7 +73,7 @@ public:
     Rx(const int K,const std::string uri,
        const std::vector<std::string> &params,
        const std::vector<std::string> &channels,
-       const int n_frames = 1) : K(K), uri(uri),
+       const int n_frames = 1) : lo_mhz(-1), K(K), uri(uri),
                                  params(params), channels(channels), items_in_buffer(0),
                                  buffer_size(K*n_frames) {
 
@@ -102,6 +102,8 @@ public:
     virtual ~Rx() = default;
 
     void start_rx();
+    void tune(uint32_t);
+    int32_t lo_mhz;
 protected:
     void _generate(uint8_t *real, uint8_t *imag);
 

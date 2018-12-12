@@ -41,5 +41,5 @@ include(${wxWidgets_USE_FILE})
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS} ${PYTHON_INCLUDE_DIRS} ${GTK3_INCLUDE_DIRS})
 
-add_executable(cmpxchg main.cpp Signal.cpp Signal.h Task.cpp Task.h Module.cpp Module.h Sync.cpp Sync.h Slot.cpp Slot.h Port.cpp Port.h Rx.cpp Rx.h RxBuilder.cpp RxBuilder.h DummySink.cpp DummySink.h Waterfall.cpp Waterfall.h FmDemod.cpp FmDemod.h PaAudio.cpp PaAudio.h Sniff.cpp Sniff.h FFT.cpp FFT.h SDLSink.cpp SDLSink.h Timer.cpp Timer.h Spectrogram.cpp Spectrogram.h GnuplotSink.cpp GnuplotSink.h gnuplot_i.hpp gui/MainWin.cpp gui/MainWin.h gui/PlotArea.cpp gui/PlotArea.h GtkSink.cpp GtkSink.h)
+add_executable(cmpxchg main.cpp Signal.cpp Signal.h Task.cpp Task.h Module.cpp Module.h Sync.cpp Sync.h Slot.cpp Slot.h Port.cpp Port.h Rx.cpp Rx.h RxBuilder.cpp RxBuilder.h DummySink.cpp DummySink.h Waterfall.cpp Waterfall.h FmDemod.cpp FmDemod.h PaAudio.cpp PaAudio.h Sniff.cpp Sniff.h FFT.cpp FFT.h SDLSink.cpp SDLSink.h Timer.cpp Timer.h Spectrogram.cpp Spectrogram.h GnuplotSink.cpp GnuplotSink.h gnuplot_i.hpp gui/MainWin.cpp gui/MainWin.h gui/PlotArea.cpp gui/PlotArea.h GtkSink.cpp GtkSink.h FMrx.cpp FMrx.h Tuner.h Nco.cpp Nco.h)
 target_link_libraries(cmpxchg pthread iio liquid pulse pulse-simple SDL fftw3f ${Boost_LIBRARIES} ${PYTHON_LIBRARIES} ${wxWidgets_LIBRARIES} ${OPENGL_LIBRARIES} ${GTK3_LIBRARIES})

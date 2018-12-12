@@ -7,12 +7,28 @@
 
 #include <gtkmm.h>
 
+class PlotAreaMediator {
+public:
+    virtual void tune(float freq) = 0;
+    virtual void up() = 0;
+    virtual void down() = 0;
+};
+
 class PlotArea : public Gtk::DrawingArea {
 
-    std::vector<std::pair<int, float>> data;
+    std::vector<float> data;
+    uint64_t tuner_x, tuned_x;
+    PlotAreaMediator &mediator;
+    Cairo::RefPtr<Cairo::ImageSurface> surface;
+    std::unique_ptr<std::vector<uint8_t >> pixel_data;
+
+    unsigned int rgb(double);
 public:
-    PlotArea();
-    void updateData(std::vector<std::pair<int, float>> &data);
+    PlotArea(PlotAreaMediator &mediator);
+    void updateData(std::vector<float> &data);
+    void mouse(GdkEventMotion* event);
+    void tune(GdkEventButton* event);
+    void scroll(GdkEventScroll* event);
     virtual bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr);
 
 };

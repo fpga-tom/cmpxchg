@@ -22,11 +22,12 @@ namespace module {
 }
 
 class DummySink : public Module {
-
-public:
     inline Task&   operator[](const module::dummysink::tsk           t) { return Module::operator[]((int)t);                          }
     inline Port& operator[](const module::dummysink::port::sink p) { return Module::operator[]((int)module::dummysink::tsk::sink)[(int)p]; }
 
+public:
+
+    Port& p_in() { return this->operator[](module::dummysink::port::sink::p_in); }
 
     DummySink() {
         Task & t_sink = create_task("sink", {

@@ -29,6 +29,7 @@ class Rx : public Module {
 
     inline Task&   operator[](const module::rx::tsk           t) { return Module::operator[]((int)t);                          }
     inline Port& operator[](const module::rx::port::generate p) { return Module::operator[]((int)module::rx::tsk::generate)[(int)p]; }
+    inline Port& operator[](const module::rx::port::convert p) { return Module::operator[]((int)module::rx::tsk::convert)[(int)p]; }
 
 
 
@@ -67,7 +68,8 @@ class Rx : public Module {
     const int K;
 
 public:
-    inline Port& operator[](const module::rx::port::convert p) { return Module::operator[]((int)module::rx::tsk::convert)[(int)p]; }
+
+    Port& p_out() { return this->operator[](module::rx::port::convert ::p_out); }
     Rx(const int K,const std::string uri,
        const std::vector<std::string> &params,
        const std::vector<std::string> &channels,

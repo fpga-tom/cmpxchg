@@ -24,8 +24,9 @@ namespace module {
 
 class FmDemod : public Module {
     inline Task&   operator[](const module::fm_demod::tsk           t) { return Module::operator[]((int)t);                          }
-
     inline Port& operator[](const module::fm_demod::port::demod p) { return Module::operator[]((int)module::fm_demod::tsk::demod)[(int)p]; }
+    inline Port& operator[](const module::fm_demod::port::downsample_first p) { return Module::operator[]((int)module::fm_demod::tsk::downsample_first)[(int)p]; }
+    inline Port& operator[](const module::fm_demod::port::downsample_second p) { return Module::operator[]((int)module::fm_demod::tsk::downsample_second)[(int)p]; }
 
 
     const int buf_size;
@@ -37,12 +38,13 @@ class FmDemod : public Module {
 
     freqdem q_demod;
 public:
-    inline Port& operator[](const module::fm_demod::port::downsample_first p) { return Module::operator[]((int)module::fm_demod::tsk::downsample_first)[(int)p]; }
-    inline Port& operator[](const module::fm_demod::port::downsample_second p) { return Module::operator[]((int)module::fm_demod::tsk::downsample_second)[(int)p]; }
+    Port& p_in() { return this->operator[](module::fm_demod::port::downsample_first ::p_in); }
+    Port& p_out() { return this->operator[](module::fm_demod::port::downsample_second::p_out); }
+
     FmDemod(const int buf_size, int down_one, int down_two) :
         buf_size(buf_size), down_one(down_one), down_two(down_two) {
 
-        q_one = firdecim_crcf_create_kaiser(down_one,8,30.);
+        q_one = firdecim_crcf_create_kaiser(down_one,8,20.);
         q_two = firdecim_rrrf_create_kaiser(down_two,8,60.);
 
         q_demod = freqdem_create(.75);

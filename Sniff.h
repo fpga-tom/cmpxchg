@@ -23,10 +23,12 @@ namespace module {
 
 class Sniff : public Module {
     inline Task&   operator[](const module::sniff::tsk           t) { return Module::operator[]((int)t);                          }
+    inline Port& operator[](const module::sniff::port::sniff p) { return Module::operator[]((int)module::sniff::tsk::sniff)[(int)p]; }
     Port& port;
     const int buf_size;
 public:
-    inline Port& operator[](const module::sniff::port::sniff p) { return Module::operator[]((int)module::sniff::tsk::sniff)[(int)p]; }
+    Port& p_out() { return this->operator[](module::sniff::port::sniff::p_out); }
+
     Sniff( Port& port, const int buf_size) : port(port), buf_size(buf_size) {
         Task & t_sniff = create_task("sniff", {
                 TagPortOut("p_out", (uint8_t )module::sniff::port::sniff ::p_out, buf_size)

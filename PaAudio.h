@@ -25,6 +25,7 @@ namespace module {
 
 class PaAudio : public Module {
     inline Task&   operator[](const module::pa_audio::tsk           t) { return Module::operator[]((int)t);                          }
+    inline Port& operator[](const module::pa_audio::port::play p) { return Module::operator[]((int)module::pa_audio::tsk::play)[(int)p]; }
 
     int play(uint8_t** d_in, uint8_t **d_out);
 
@@ -37,7 +38,7 @@ class PaAudio : public Module {
     int error;
 
 public:
-    inline Port& operator[](const module::pa_audio::port::play p) { return Module::operator[]((int)module::pa_audio::tsk::play)[(int)p]; }
+    Port& p_in() { return this->operator[](module::pa_audio::port::play::p_in); }
 
 
     const int buf_size;

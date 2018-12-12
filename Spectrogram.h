@@ -24,8 +24,10 @@ namespace module {
 
 class Spectrogram : public Module {
     inline Task&   operator[](const module::spectrogram::tsk           t) { return Module::operator[]((int)t);                          }
-public:
     inline Port& operator[](const module::spectrogram::port::spectrum p) { return Module::operator[]((int)module::spectrogram::tsk::spectrum)[(int)p]; }
+public:
+    Port& p_in() { return this->operator[](module::spectrogram::port::spectrum::p_in);}
+    Port& p_out() {return this->operator[](module::spectrogram::port::spectrum::p_out);}
     const int buf_size;
     Spectrogram(const int buf_size) : buf_size(buf_size) {
 

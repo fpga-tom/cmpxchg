@@ -54,14 +54,14 @@ public:
         uint64_t v;
 //        std::unique_lock<std::mutex> lock(*iio_mutex);
         while(!(v=tas(shared_var.get(), 0)))
-            std::this_thread::sleep_for(std::chrono::microseconds(400));
+            std::this_thread::sleep_for(std::chrono::microseconds(50));
 //            iio_cond->wait(lock);
         *shared_var_last = v;
         return v;
     }
     void put(uint64_t v) {
         while(!cas(shared_var.get(), 0, v))
-            std::this_thread::sleep_for(std::chrono::microseconds(400));
+            std::this_thread::sleep_for(std::chrono::microseconds(50));
 //            iio_cond->notify_all();
     }
 

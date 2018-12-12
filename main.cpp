@@ -15,6 +15,8 @@
 #include "FFT.h"
 #include "SDLSink.h"
 #include "Spectrogram.h"
+#include "GnuplotSink.h"
+#include "gui/MainWin.h"
 
 namespace types
 {
@@ -303,14 +305,15 @@ uint64_t reg_0(uint64_t i_state, int rounds = 64) {
 
 }
 
-int main() {
+int main(int argc, char** argv) {
 #if 0
     auto t1 = std::thread(thread_1);
     auto t2 = std::thread(thread_2, 0);
     t1.join();
     t2.join();
 #endif
-
+#define FM_DEMOD
+#ifdef FM_DEMOD
     RXBuilder builder;
     std::unique_ptr<Rx> rx = builder
             .with_rfport("A_BALANCED")
@@ -323,21 +326,27 @@ int main() {
             .gain_mode("fast_attack")
             .with_lo(88.8)
             .with_bw(.2)
-            .with_fs(3.072)
+            .with_fs(3.072*1)
             .with_K(0x10000);
 
-    FmDemod fm(0x10000,16,4);
-    PaAudio pa(0x10000/64);
-    fm[module::fm_demod::port::downsample_first ::p_in].bind(rx->operator[](module::rx::port::convert ::p_out));
-    pa[module::pa_audio::port::play::p_in].bind(fm[module::fm_demod::port::downsample_second::p_out]);
+    FmDemod fm(0x10000,16*1,4);
+    PaAudio pa(0x10000/64/1);
+    fm.p_in().bind(rx->p_out());
+    pa.p_in().bind(fm.p_out());
 
-    Sniff sniff(rx->operator[](module::rx::port::convert ::p_out), 1024*sizeof(std::complex<float>));
-    FFT fft(1024);
-    Spectrogram spectrogram(1024);
-    SDLSink sdl(1024);
-    fft[module::fft::port::forward::p_in].bind(sniff[module::sniff::port::sniff::p_out]);
-    spectrogram[module::spectrogram::port::spectrum ::p_in].bind(fft[module::fft::port::forward::p_out]);
-    sdl[module::sdl::port::paint::p_in].bind(spectrogram[module::spectrogram::port::spectrum ::p_out]);
+    const int fft_len = 1024;
+    Sniff sniff(rx->p_out(), fft_len*sizeof(std::complex<float>));
+    FFT fft(fft_len);
+    Spectrogram spectrogram(fft_len);
+//    SDLSink sdl(1024);
+    MainWin mainWin(argc, argv);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    GtkSink gp(fft_len, mainWin);
+    fft.p_in().bind(sniff.p_out());
+    spectrogram.p_in().bind(fft.p_out());
+    gp.p_in().bind(spectrogram.p_out());
+
+
 
     pthread_setname_np(pthread_self(), "main");
 
@@ -348,7 +357,7 @@ int main() {
     sniff.start();
     fft.start();
     spectrogram.start();
-    sdl.start();
+    gp.start();
 
     pa.join();
     rx->join();
@@ -356,7 +365,46 @@ int main() {
     sniff.join();
     fft.join();
     spectrogram.join();
-    sdl.join();
+    gp.join();
+
+#elif defined(DVB_DEMOD)
+
+    RXBuilder builder;
+    std::unique_ptr<Rx> rx = builder
+            .with_rfport("A_BALANCED")
+            .with_uri("192.168.4.10")
+            .enable_chn("voltage0")
+            .enable_chn("voltage1")
+            .enable_bbdc(true)
+            .enable_rfdc(true)
+            .enable_quadrature(true)
+            .gain_mode("fast_attack")
+            .with_lo(474)
+            .with_bw(8)
+            .with_fs(10)
+            .with_K(0x10000);
+
+    Sync sync;
+    DummySink ds;
+    sync.p_in().bind(rx->p_out());
+    ds.p_in().bind(sync.p_out());
+
+    Sniff sniff(sync.p_corr_out(), 10240*sizeof(std::complex<float>));
+    GnuplotSink gp(1024);
+    gp.p_in().bind(sniff.p_out());
+
+    rx->start();
+    sync.start();
+    ds.start();
+    sniff.start();
+    gp.start();
+
+    rx->join();
+    sync.join();
+    ds.join();
+    sniff.join();
+    gp.join();
+#endif
 
 
 //    uint64_t i = 0;

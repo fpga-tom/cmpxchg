@@ -25,12 +25,15 @@ namespace module {
 
 class FFT : public Module {
     inline Task&   operator[](const module::fft::tsk           t) { return Module::operator[]((int)t);                          }
+    inline Port& operator[](const module::fft::port::forward p) { return Module::operator[]((int)module::fft::tsk::forward)[(int)p]; }
     const int buf_size;
     fftwf_complex *inBuf, *outBuf;
     fftwf_plan_s *plan;
 
 public:
-    inline Port& operator[](const module::fft::port::forward p) { return Module::operator[]((int)module::fft::tsk::forward)[(int)p]; }
+
+    Port& p_in() { return this->operator[](module::fft::port::forward::p_in);}
+    Port& p_out() { return this->operator[](module::fft::port::forward::p_out);}
     FFT(const int buf_size) : buf_size(buf_size) {
 
         inBuf = reinterpret_cast<fftwf_complex*>(fftwf_malloc(

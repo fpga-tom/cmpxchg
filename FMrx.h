@@ -9,16 +9,19 @@
 #include "Tuner.h"
 #include "Nco.h"
 #include "Rx.h"
+#include "gui/MainWin.h"
 
 class FMrx : public Tuner {
 
     std::unique_ptr<NCO> nco;
     std::unique_ptr<Rx> rx;
+    std::unique_ptr<MainWin> mainWin;
 
     uint32_t lo;
 
 public:
-    FMrx(uint32_t lo) : lo(lo) {}
+    FMrx(uint32_t lo) : lo(lo) {
+    }
     void play(int &argc, char** &argv);
     void tune(float freq) override;
     void up() override;

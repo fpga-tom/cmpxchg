@@ -23,12 +23,15 @@ class PlotArea : public Gtk::DrawingArea {
     std::unique_ptr<std::vector<uint8_t >> pixel_data;
 
     unsigned int rgb(double);
+    bool update_in_progress;
+    float freq;
 public:
     PlotArea(PlotAreaMediator &mediator);
     void updateData(std::vector<float> &data);
     void mouse(GdkEventMotion* event);
     void tune(GdkEventButton* event);
     void scroll(GdkEventScroll* event);
+    void tuned_to(float freq);
     virtual bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr);
 
 };

@@ -50,3 +50,7 @@ void MainWin::up() {
 void MainWin::down() {
     tuner.down();
 }
+
+void MainWin::tuned_to(float freq) {
+    pa->tuned_to(freq);
+}

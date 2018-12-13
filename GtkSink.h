@@ -28,6 +28,7 @@ public:
     virtual void x_range(uint64_t from, uint64_t to) = 0;
     virtual void y_range(uint64_t from, uint64_t to) = 0;
     virtual void send(std::vector<float> data) = 0;
+    virtual void tuned_to(float freq) = 0;
 };
 
 

@@ -3,9 +3,11 @@
 //
 
 #include <iostream>
+#include <iomanip>
 #include "PlotArea.h"
 
 bool PlotArea::on_draw(const ::Cairo::RefPtr<::Cairo::Context> &cr) {
+    update_in_progress = true;
     Gtk::Allocation allocation = get_allocation();
     const int width = allocation.get_width();
     const int height = allocation.get_height();
@@ -27,7 +29,7 @@ bool PlotArea::on_draw(const ::Cairo::RefPtr<::Cairo::Context> &cr) {
 //    cr->fill();
     if(data.size() > 0)
         cr->move_to(0, yc - data[0]*3);
-    for(int i = 0; i < data.size(); ++i) {
+    for(int i = 0; i < data.size(); i+=1) {
         cr->line_to(i, yc-data[i]);
     }
     if(data.size() > 0) {
@@ -47,14 +49,14 @@ bool PlotArea::on_draw(const ::Cairo::RefPtr<::Cairo::Context> &cr) {
     if(data.size() > 0)
         cr->move_to(0,yc - data[0]);
     cr->set_line_width(1.0);
-    for(int i = 0; i < data.size(); ++i) {
+    for(int i = 0; i < data.size(); i+=1) {
         cr->line_to(i, yc-data[i]);
     }
     cr->stroke();
 
     std::copy(begin(*pixel_data), end(*pixel_data) - 1024*4, begin(*pixel_data) + 1024*4);
     if(data.size() > 0) {
-        for (int i = 0; i < 1024; i++) {
+        for (int i = 0; i < 1024; ++i) {
             uint32_t rgb_val = rgb(data[i]/512.);
             (*pixel_data)[i * 4] = rgb_val&0xff;
             (*pixel_data)[i * 4 + 1] = (rgb_val >> 8)&0xff;
@@ -77,8 +79,73 @@ bool PlotArea::on_draw(const ::Cairo::RefPtr<::Cairo::Context> &cr) {
     cr->rectangle(tuned_x - 25,0, 50, height);
     cr->fill();
 
+    cr->set_source_rgb(1.,1.,1.);
+
+    int step = xc / 30;
+    int current = xc;
+    for(int i = 0; i < 30; i++) {
+        cr->move_to(current, 0);
+        if (i % 10 == 0)
+            cr->line_to(current, 10);
+        else if( i % 5 == 0)
+            cr->line_to(current, 7);
+        else
+            cr->line_to(current, 4);
+        current += step;
+    }
+    current = xc - step;
+    for(int i = 1; i < 30; i++) {
+        cr->move_to(current, 0);
+        if (i % 10 == 0)
+            cr->line_to(current, 10);
+        else if( i % 5 == 0)
+            cr->line_to(current, 7);
+        else
+            cr->line_to(current, 4);
+        current -= step;
+    }
+    cr->stroke();
+
+    current = xc;
+    step = xc / 6;
+    cr->set_source_rgb(0.9, 0.9, 0.9);
+
+    cr->select_font_face("Purisa",
+                           Cairo::FontSlant::FONT_SLANT_NORMAL,
+                           Cairo::FontWeight::FONT_WEIGHT_BOLD);
+
+    cr->set_font_size(13);
+    for(int i = 0; i < 6; i++) {
+        std::ostringstream s;
+        s << std::fixed;
+        s << std::setprecision(1);
+        s << (i*5.f/30.f) *(3.072 * 3/2) + freq/1e6;
+        cr->move_to(current-15, 23);
+        cr->show_text(s.str());
+        current += step;
+    }
+
+    current = xc-step;
+    for(int i = 1; i < 6; i++) {
+        std::ostringstream s;
+        s << std::fixed;
+        s << std::setprecision(1);
+        s << (-i*5.f/30.f) *(3.072 * 3/2) + freq/1e6;
+        cr->move_to(current-15, 23);
+        cr->show_text(s.str());
+        current -= step;
+    }
+
+    std::ostringstream s;
+    s << std::fixed;
+    s << std::setprecision(1);
+    float fr = (((float)tuned_x - xc) / xc);
+    s << fr *(3.072 * 3/2) + freq/1e6;
+    cr->move_to(10, 43);
+    cr->show_text(s.str() + "Mhz");
 
 
+    update_in_progress = false;
     return true;
 }
 
@@ -102,6 +169,8 @@ unsigned int PlotArea::rgb(double hue)
 }
 
 void PlotArea::updateData(std::vector< float> &data) {
+    if(update_in_progress)
+        return;
     this->data = data;
 
     auto win = get_window();
@@ -113,7 +182,7 @@ void PlotArea::updateData(std::vector< float> &data) {
     }
 }
 
-PlotArea::PlotArea(PlotAreaMediator &mediator) : tuner_x(0), tuned_x(0), mediator(mediator) {
+PlotArea::PlotArea(PlotAreaMediator &mediator) : tuner_x(0), tuned_x(0), mediator(mediator), update_in_progress(false) {
     add_events(Gdk::EventMask::POINTER_MOTION_MASK);
     add_events(Gdk::EventMask::BUTTON_PRESS_MASK);
     add_events(Gdk::EventMask::SCROLL_MASK);
@@ -149,5 +218,9 @@ void PlotArea::scroll(GdkEventScroll *event) {
     if(event->direction == GdkScrollDirection::GDK_SCROLL_DOWN) {
         mediator.down();
     }
+}
+
+void PlotArea::tuned_to(float freq) {
+    this->freq = freq;
 }
 

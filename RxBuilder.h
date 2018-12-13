@@ -39,6 +39,12 @@ public:
         return *this;
     }
 
+    Self &with_lo_hz(float lo_hz) {
+        params.push_back("out_altvoltage0_RX_LO_frequency=" +
+                         std::to_string((long long)(lo_hz)));
+        return *this;
+    }
+
     Self &with_rfport(std::string rfport) {
         params.push_back("in_voltage0_rf_port_select=" +
                                     rfport);

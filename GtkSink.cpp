@@ -30,7 +30,7 @@ GtkSink::GtkSink(const int buf_size, GtkProto &proto) : buf_size(buf_size), prot
         for(int i = 0; i < buf_size; i++) {
             acc[i] += d[i] - delay[i];
             d_vec[i] = d[i];
-            x_vec[i] = (acc[i]/5.);
+            x_vec[i] = (acc[i]/5.f);
         }
         float sum = 0;
         for(int i = 0; i < buf_size; i++) {
@@ -38,8 +38,8 @@ GtkSink::GtkSink(const int buf_size, GtkProto &proto) : buf_size(buf_size), prot
         }
         float mean = sum / buf_size;
         for(int i = 0; i < buf_size; i++) {
-            x_vec[i] -= mean - 9;
-            x_vec[i] *= 3;
+            x_vec[i] -= mean - 12;
+            x_vec[i] *= 4;
         }
         vec_history.pop_front();
         vec_history.emplace_back(d_vec);

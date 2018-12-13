@@ -49,6 +49,8 @@ public:
 
     void down() override;
 
+    void tuned_to(float freq) override;
+
 };
 
 

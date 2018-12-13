@@ -144,7 +144,6 @@ bool PlotArea::on_draw(const ::Cairo::RefPtr<::Cairo::Context> &cr) {
     cr->move_to(10, 43);
     cr->show_text(s.str() + "Mhz");
 
-
     update_in_progress = false;
     return true;
 }

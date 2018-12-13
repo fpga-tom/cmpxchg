@@ -9,6 +9,7 @@
 MainWin::MainWin(int &argc, char** &argv, Tuner& tuner) : tuner(tuner) {
 
     winThread = std::thread([this, &argc, &argv]()-> void {
+        pthread_setname_np(pthread_self(), "win");
         app = Gtk::Application::create(argc, argv);
         Gtk::Window window;
         window.set_default_size(g_iDefaultWidth, g_iDefaultHeight);

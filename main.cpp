@@ -6,6 +6,7 @@
 #include <vector>
 #include "FMrx.h"
 #include "Signal.h"
+#include "GSMrx.h"
 
 namespace types
 {
@@ -302,6 +303,7 @@ int main(int argc, char** argv) {
     t2.join();
 #endif
 #define FM_DEMOD
+
 #ifdef FM_DEMOD
     FMrx fmRx(88800000);
     fmRx.play(argc, argv);
@@ -344,7 +346,10 @@ int main(int argc, char** argv) {
     ds.join();
     sniff.join();
     gp.join();
-#endif
+#elif defined(GSM_DEMOD)
+    GSMrx gsmRx(952200000);
+    gsmRx.receive(argc, argv);
+    #endif
 
 
 //    uint64_t i = 0;

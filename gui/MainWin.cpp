@@ -13,21 +13,37 @@ MainWin::MainWin(int &argc, char** &argv, Tuner& tuner) : tuner(tuner) {
         app = Gtk::Application::create(argc, argv);
         Gtk::Window window;
         window.set_default_size(g_iDefaultWidth, g_iDefaultHeight);
-        PlotArea myArea(*this);
-        pa = std::shared_ptr<PlotArea>(&myArea);
+        FFTPlot fftPlot1(g_iDefaultWidth, 200, 3, *this);
+        WaterfallPlot waterfallPlot1(g_iDefaultWidth, 500);
 
-        window.add(myArea);
-        myArea.show();
+        fftPlot = std::shared_ptr<FFTPlot>(&fftPlot1);
+        waterfallPlot = std::shared_ptr<WaterfallPlot>(&waterfallPlot1);
+
+        Gtk::Box box(Gtk::ORIENTATION_VERTICAL);
+
+        box.pack_start(fftPlot1);
+        box.pack_end(waterfallPlot1);
+        window.add(box);
+        box.show();
+        fftPlot1.show();
+        waterfallPlot1.show();
+
+//        PlotArea myArea(*this);
+//        pa = std::shared_ptr<PlotArea>(&myArea);
+
+//        window.add(myArea);
+//        myArea.show();
 
         app->run(window);
-
 
     });
 
 }
 
-void MainWin::send(std::vector<float> data) {
-    pa->updateData(data);
+void MainWin::send(std::vector<std::pair<float, float>> data) {
+    fftPlot->updateData(data);
+    waterfallPlot->updateData(data);
+//    pa->updateData(data);
 }
 
 void MainWin::y_range(uint64_t from, uint64_t to) {
@@ -53,5 +69,6 @@ void MainWin::down() {
 }
 
 void MainWin::tuned_to(float freq) {
-    pa->tuned_to(freq);
+    fftPlot->tuned_to(freq);
+//    pa->tuned_to(freq);
 }

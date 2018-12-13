@@ -22,6 +22,7 @@ class PlotArea : public Gtk::DrawingArea {
     Cairo::RefPtr<Cairo::ImageSurface> surface;
     std::unique_ptr<std::vector<uint8_t >> pixel_data;
 
+
     unsigned int rgb(double);
     bool update_in_progress;
     float freq;
@@ -32,7 +33,8 @@ public:
     void tune(GdkEventButton* event);
     void scroll(GdkEventScroll* event);
     void tuned_to(float freq);
-    virtual bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr);
+
+    bool on_draw(const ::Cairo::RefPtr< ::Cairo::Context>& cr) override;
 
 };
 
